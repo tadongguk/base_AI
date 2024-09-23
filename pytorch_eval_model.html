@@ -81,39 +81,54 @@ print(f'Accuracy on test set: {accuracy:.2f}%')
 from PIL import Image
 from torchvision import transforms
 import torchvision.transforms.functional as TF
+import torch
+import matplotlib.pyplot as plt
 
 # Tải và chuẩn bị ảnh mới
 def preprocess_image(image_path):
-  image = Image.open(image_path)
+    # Mở ảnh từ đường dẫn
+    image = Image.open(image_path)
 
-  preprocess_image = transforms.Compose([
-      transforms.Grayscale(num_output_channels=1),
-      transforms.Resize((28, 28)),
-      transforms.ToTensor(),
-      transforms.Normalize(mean=[0.1307], std=[0.3081])
-  ])
+    # Định nghĩa các bước tiền xử lý ảnh
+    preprocess_image = transforms.Compose([
+        transforms.Grayscale(num_output_channels=1),  # Chuyển ảnh sang thang độ xám với 1 kênh màu
+        transforms.Resize((28, 28)),  # Thay đổi kích thước ảnh về 28x28
+        transforms.ToTensor(),  # Chuyển ảnh thành tensor
+        transforms.Normalize(mean=[0.1307], std=[0.3081])  # Chuẩn hóa tensor với giá trị trung bình và độ lệch chuẩn
+    ])
 
-  image = TF.invert(image)
-  image_tensor = preprocess_image(image)
-  image_tensor = image_tensor.unsqueeze(0)
-  return image
+    # Đảo ngược màu sắc của ảnh
+    image = TF.invert(image)
+    # Áp dụng các bước tiền xử lý lên ảnh
+    image_tensor = preprocess_image(image)
+    # Thêm một chiều mới vào tensor để phù hợp với đầu vào của mô hình
+    image_tensor = image_tensor.unsqueeze(0)
+    return image
+
+# Đường dẫn đến ảnh cần dự đoán
 image_path = '1.png'
+# Tiền xử lý ảnh và chuyển thành tensor
 image_tensor = preprocess_image(image_path)
+
+# Khởi tạo mô hình CNN
 model = CNN()
+# Tải trọng số đã huấn luyện của mô hình
 model.load_state_dict(torch.load(root_dir + '/mnist_model.pt'))
+# Đặt mô hình ở chế độ đánh giá
 model.eval()
-with torch.no_grad():
-    output = model(image_tensor)
-    prediction = torch.argmax(output, dim=1)
-    print(f'Prediction: {prediction.item()}')
-import matplotlib.pyplot as plt
-# image_to_show = image_tensor.squeeze(0) #delete 1 demension 1 28 28
 
-# image_to_show = image_to_show.squeeze(0) #delete 1 demension 28 28
+# Dự đoán kết quả với ảnh đã tiền xử lý
+with torch.no_grad():  # Tắt gradient để tiết kiệm bộ nhớ và tăng tốc độ
+    output = model(image_tensor)  # Chạy mô hình với ảnh đầu vào
+    prediction = torch.argmax(output, dim=1)  # Lấy nhãn dự đoán có xác suất cao nhất
+    print(f'Prediction: {prediction.item()}')  # In ra nhãn dự đoán
 
-# squeeze loại bỏ data có chiều bằng 1
-image_to_show = image_tensor.squeeze() #delete 1 demension 1 28 28
-print(image_to_show.shape)
+# Hiển thị ảnh và nhãn dự đoán
+# Loại bỏ chiều có giá trị bằng 1 từ tensor để phù hợp với định dạng ảnh
+image_to_show = image_tensor.squeeze()
+print(image_to_show.shape)  # In ra kích thước của tensor sau khi loại bỏ chiều
+
+# Hiển thị ảnh với thang độ xám và tiêu đề là nhãn dự đoán
 plt.imshow(image_to_show, cmap='gray')
 plt.title(f'Prediction: {prediction.item()}')
 plt.show()
