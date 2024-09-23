@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đánh Giá Mô Hình Ảnh với PyTorch</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        code {
+            font-family: "Courier New", Courier, monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Đánh Giá Mô Hình Ảnh với PyTorch</h1>
+
+    <h2>1. Chuẩn Bị Dữ Liệu</h2>
+    <p>Sử dụng <code>torchvision</code> để tải và chuẩn bị dữ liệu ảnh.</p>
+    <pre><code class="language-python">
+from torchvision import datasets, transforms
+from torch.utils.data import DataLoader
+
+# Định nghĩa các phép biến đổi cho dữ liệu
+transform = transforms.Compose([
+    transforms.Resize((128, 128)),  # Thay đổi kích thước ảnh
+    transforms.ToTensor(),          # Chuyển đổi ảnh thành tensor
+    transforms.Normalize((0.5,), (0.5,))  # Chuẩn hóa ảnh
+])
+
+# Tải dữ liệu kiểm tra
+test_dataset = datasets.ImageFolder(root='./test_data', transform=transform)
+test_loader = DataLoader(dataset=test_dataset, batch_size=32, shuffle=False)
+    </code></pre>
+
+    <h2>2. Đặt Mô Hình vào Chế Độ Đánh Giá</h2>
+    <p>Đảm bảo mô hình không sử dụng dropout hay batch normalization trong chế độ đánh giá.</p>
+    <pre><code class="language-python">
+model.eval()
+    </code></pre>
+
+    <h2>3. Đánh Giá Mô Hình</h2>
+    <p>Sử dụng <code>torch.no_grad()</code> để tắt gradient và tính toán độ chính xác.</p>
+    <pre><code class="language-python">
+import torch
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model.to(device)
+
+correct = 0
+total = 0
+
+with torch.no_grad():
+    for data, target in test_loader:
+        data, target = data.to(device), target.to(device)
+        outputs = model(data)
+        _, predicted = torch.max(outputs.data, 1)
+        total += target.size(0)
+        correct += (predicted == target).sum().item()
+
+accuracy = 100 * correct / total
+print(f'Accuracy on test set: {accuracy:.2f}%')
+    </code></pre>
+
+    <h2>4. Dự Đoán Trên Ảnh Mới</h2>
+    <p>Thực hiện dự đoán trên một ảnh mới.</p>
+    <pre><code class="language-python">
+from PIL import Image
+
+# Tải và chuẩn bị ảnh mới
+image = Image.open('path_to_new_image.jpg')
+image = transform(image).unsqueeze(0)  # Thêm một chiều batch
+image = image.to(device)
+
+# Dự đoán
+model.eval()
+with torch.no_grad():
+    output = model(image)
+    _, predicted = torch.max(output, 1)
+    print(f'Predicted class: {predicted.item()}')
+    </code></pre>
+</body>
+</html>
