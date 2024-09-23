@@ -79,18 +79,44 @@ print(f'Accuracy on test set: {accuracy:.2f}%')
     <p>Thực hiện dự đoán trên một ảnh mới.</p>
     <pre><code class="language-python">
 from PIL import Image
+from torchvision import transforms
+import torchvision.transforms.functional as TF
 
 # Tải và chuẩn bị ảnh mới
-image = Image.open('path_to_new_image.jpg')
-image = transform(image).unsqueeze(0)  # Thêm một chiều batch
-image = image.to(device)
+def preprocess_image(image_path):
+  image = Image.open(image_path)
 
-# Dự đoán
+  preprocess_image = transforms.Compose([
+      transforms.Grayscale(num_output_channels=1),
+      transforms.Resize((28, 28)),
+      transforms.ToTensor(),
+      transforms.Normalize(mean=[0.1307], std=[0.3081])
+  ])
+
+  image = TF.invert(image)
+  image_tensor = preprocess_image(image)
+  image_tensor = image_tensor.unsqueeze(0)
+  return image
+image_path = '1.png'
+image_tensor = preprocess_image(image_path)
+model = CNN()
+model.load_state_dict(torch.load(root_dir + '/mnist_model.pt'))
 model.eval()
 with torch.no_grad():
-    output = model(image)
-    _, predicted = torch.max(output, 1)
-    print(f'Predicted class: {predicted.item()}')
+    output = model(image_tensor)
+    prediction = torch.argmax(output, dim=1)
+    print(f'Prediction: {prediction.item()}')
+import matplotlib.pyplot as plt
+# image_to_show = image_tensor.squeeze(0) #delete 1 demension 1 28 28
+
+# image_to_show = image_to_show.squeeze(0) #delete 1 demension 28 28
+
+# squeeze loại bỏ data có chiều bằng 1
+image_to_show = image_tensor.squeeze() #delete 1 demension 1 28 28
+print(image_to_show.shape)
+plt.imshow(image_to_show, cmap='gray')
+plt.title(f'Prediction: {prediction.item()}')
+plt.show()
     </code></pre>
 </body>
 </html>
